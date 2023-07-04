@@ -33,8 +33,62 @@ package KnockKnock;
 
 import java.io.*;
 import java.net.*;
+import java.util.Scanner;
 
 public class KnockKnockClient {
+    private Socket socket;
+    private BufferedReader input;
+    private PrintWriter output;
+    private String userName;
+    public KnockKnockClient(Socket socket, String userName) throws IOException{
+        this.socket = socket;
+        this.input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        this.output = new PrintWriter(socket.getOutputStream(), true);
+        this.userName = userName;
+    }
+
+    public void sendMessageToClientHandler(){
+        try{
+            output.println(userName);
+            Scanner scanner = new Scanner(System.in);
+            while (socket.isConnected()){
+                String message = scanner.nextLine();
+                output.println(userName + ": " + message);
+            }
+        }catch (Error e){
+            System.err.println("SendMsgtoCH error!");
+        }
+    }
+
+    public void listenForMessage(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String message;
+                try {
+                    while ((message = input.readLine())!= null){
+                        System.out.println(message);
+                    }
+                }catch (IOException e){
+                    close();
+                }
+
+            }
+        }).start();
+    }
+
+    protected void close(){
+        try{
+            socket.shutdownInput();
+            socket.shutdownOutput();
+            socket.close();
+        } catch (IOException e) {
+            System.out.println("Could not close socket");
+            System.exit(-1);
+        }
+    }
+
+
     public static void main(String[] args) throws IOException {
 
         if (args.length != 2) {
@@ -42,39 +96,16 @@ public class KnockKnockClient {
                     "Usage: java EchoClient <host name> <port number>");
             System.exit(1);
         }
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("What is your user name?");
+        String userName = scanner.nextLine();
 
         String hostName = args[0];
         int portNumber = Integer.parseInt(args[1]);
 
-        try (
-                Socket kkSocket = new Socket(hostName, portNumber);
-                PrintWriter out = new PrintWriter(kkSocket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(kkSocket.getInputStream()));
-        ) {
-            BufferedReader stdIn =
-                    new BufferedReader(new InputStreamReader(System.in));
-            String fromServer;
-            String fromUser;
-
-            while ((fromServer = in.readLine()) != null) {
-                System.out.println("Server: " + fromServer);
-                if (fromServer.equals("Bye."))
-                    break;
-
-                fromUser = stdIn.readLine();
-                if (fromUser != null) {
-                    System.out.println("Client: " + fromUser);
-                    out.println(fromUser);
-                }
-            }
-        } catch (UnknownHostException e) {
-            System.err.println("Don't know about host " + hostName);
-            System.exit(1);
-        } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection to " +
-                    hostName);
-            System.exit(1);
-        }
+        Socket socket = new Socket(hostName, portNumber);
+        KnockKnockClient client = new KnockKnockClient(socket, userName);
+        client.listenForMessage();
+        client.sendMessageToClientHandler();
     }
 }

@@ -35,7 +35,34 @@ import java.net.*;
 import java.io.*;
 
 public class KKMultiServer {
-    public static void main(String[] args) throws IOException {
+    private ServerSocket serverSocket;
+    public KKMultiServer(ServerSocket serverSocket){
+        this.serverSocket = serverSocket;
+    }
+    public void startServer(){
+        try {
+            while (!serverSocket.isClosed()){
+                Socket socket = serverSocket.accept();
+                System.out.println("New user!");
+                ClientHandler clientHandler = new ClientHandler(socket);
+                Thread thread = new Thread(clientHandler);
+                thread.start();
+            }
+        } catch (IOException e){
+            closeServerSocket();
+        }
+    }
+
+    public void closeServerSocket(){
+        try {
+            if(serverSocket != null){
+                serverSocket.close();
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+    public static void main(String[] args) throws IOException{
 
         if (args.length != 1) {
             System.err.println("Usage: java KKMultiServer <port number>");
@@ -43,16 +70,10 @@ public class KKMultiServer {
         }
 
         int portNumber = Integer.parseInt(args[0]);
-        boolean listening = true;
 
-        try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
-            while (listening) {
-                new KKMultiServerThread(serverSocket.accept()).start();
-            }
-        } catch (IOException e) {
-            System.err.println("Could not listen on port " + portNumber);
-            System.exit(-1);
-        }
+        ServerSocket serverSocket = new ServerSocket(portNumber);
+        KKMultiServer server = new KKMultiServer(serverSocket);
+        server.startServer();
     }
 }
 
