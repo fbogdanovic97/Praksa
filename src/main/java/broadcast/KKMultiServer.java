@@ -1,4 +1,4 @@
-package KnockKnock;
+package broadcast;
 
 /*
  * Copyright (c) 1995, 2013, Oracle and/or its affiliates. All rights reserved.
@@ -30,6 +30,8 @@ package KnockKnock;
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+import KnockKnock.ClientHandler;
 
 import java.net.*;
 import java.io.*;
@@ -64,12 +66,13 @@ public class KKMultiServer {
     }
     public static void main(String[] args) throws IOException{
 
-        if (args.length != 1) {
-            System.err.println("Usage: java KKMultiServer <port number>");
-            System.exit(1);
-        }
+
 
         int portNumber = Integer.parseInt(args[0]);
+        String serverName = args[1];
+
+        LocationBroadcast broadcast = new LocationBroadcast(portNumber, serverName);
+        broadcast.start();
 
         ServerSocket serverSocket = new ServerSocket(portNumber);
         KKMultiServer server = new KKMultiServer(serverSocket);
